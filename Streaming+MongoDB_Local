@@ -1,0 +1,41 @@
+#Importando módulos
+from tweepy.streaming import StreamListener
+from tweepy import OAuthHandler
+from tweepy import Stream
+from datetime import datetime
+import json    #Para armazenado dos dados no MongoDB
+
+#Preenchendo as chaves
+consumer_key = ""
+consumer_secret = ""
+access_token = "130151601-"
+access_token_secret = ""
+
+#Criando a autenticação
+auth = OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+
+#Criando uma classe e método para captura dos dados do Twitter e armazenamento no MongoDB
+
+class MyListener(StreamListener): #StreamListener é um objeto específico do tweepy
+    def on_data(self,dados):
+        tweet = json.loads(dados) #Carrega os dados em json
+        tweetind = col.insert_one(tweet).inserted_id #Cria uma coleção 'tweetind' e usa método insert_one para inserir obj nela 
+        print(tweet)
+        return True
+
+#Criando meu ouvidor, um objeto da classe MyListener() e um objeto mystream, que usa minha chave de auth para acessar o ouvidor
+meuouvidor = MyListener()
+mystream = Stream(auth, listener = meuouvidor)
+
+#CONFIGURANDO O BANCO DE DADOS PARA RECEBER OS DADOS
+from pymongo import MongoClient
+client = MongoClient('localhost', 27017)
+db = client.SouBrasileiroMas_Zé                        ## CRIAR NOME DA BASE DE DADOS AQUI. Siga o padrão: NomeDaBase_Responsável
+col = db.tweets
+
+#Estabelecendo critérios, no caso uma lista de palavras-chaves
+keywords = ["#SouBrasileiroMas"]                       ## DIGITE AQUI O TERMO A SER PESQUISADO
+
+#Iniciando filtro e gravando tweets no MongoDB
+mystream.filter(track=keywords)
